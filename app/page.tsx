@@ -6,13 +6,11 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Music,
   Plus,
-  Search,
   Upload,
   User,
   LogOut,
   Library,
   Heart,
-  Disc,
 } from "lucide-react";
 import Link from "next/link";
 import { AudioPlayer } from "@/components/audio-player";
@@ -27,7 +25,6 @@ export default function HomePage() {
   const [playlists, setPlaylists] = useState([]);
   const [recentSongs, setRecentSongs] = useState([]);
   const [currentSong, setCurrentSong] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
   const router = useRouter();
@@ -124,7 +121,7 @@ export default function HomePage() {
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
         <div className="container mx-auto px-4 py-16">
           <div className="text-center text-white">
-            <Music className="w-20 h-20 mx-auto mb-8 text-green-500" />
+            <img src="/TuneItIn-Logo.png" alt="TuneItIn Logo" className="w-20 h-20 mx-auto mb-8" />
             <h1 className="text-7xl font-bold mb-6 bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
               TuneItIn
             </h1>
@@ -187,7 +184,7 @@ export default function HomePage() {
         <div className="container mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-6">
             <Link href="/" className="flex items-center space-x-3">
-              <Music className="w-8 h-8 text-green-500" />
+            <img src="/TuneItIn-Logo.png" alt="TuneItIn Logo" className="w-12 h-12 mx-auto" />
               <h1 className="text-2xl font-bold">TuneItIn</h1>
             </Link>
             <div className="hidden md:flex items-center space-x-6">
