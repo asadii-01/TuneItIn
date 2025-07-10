@@ -102,7 +102,9 @@ export default function UploadPage() {
     try {
       // Upload audio file
       const audioFileName = `${Date.now()}-${audioFile.name}`;
-      const audioPath = `songs/${user.id}/${audioFileName}`;
+      const safeName = audioFileName.replace(/[^a-z0-9.\-_]/gi, "_");
+      console.log(safeName);
+      const audioPath = `songs/${user.id}/${safeName}`;
 
       setUploadProgress(25);
       await uploadFile(audioFile, "audio-files", audioPath);
@@ -118,7 +120,9 @@ export default function UploadPage() {
       let coverImageUrl = null;
       if (coverImage) {
         const imageFileName = `${Date.now()}-${coverImage.name}`;
-        const imagePath = `covers/${user.id}/${imageFileName}`;
+        const safeImagName = imageFileName.replace(/[^a-z0-9.\-_]/gi, '_');
+        console.log(safeImagName);
+        const imagePath = `covers/${user.id}/${safeImagName}`;
 
         await uploadFile(coverImage, "images", imagePath);
 
