@@ -306,7 +306,7 @@ export default function PlaylistDetailPage() {
                   <Button
                     variant="outline"
                     onClick={() => setShowSongSelector(true)}
-                    className="border-gray-600 hover:bg-gray-800"
+                    className="bg-black text-green-600 border-green-600 hover:bg-green-600 hover:text-white"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Add Songs
@@ -315,7 +315,7 @@ export default function PlaylistDetailPage() {
                   <Button
                     variant="outline"
                     onClick={() => setShowEditDialog(true)}
-                    className="border-gray-600 hover:bg-gray-800"
+                    className="bg-black text-green-600 border-green-600 hover:bg-green-600 hover:text-white"
                   >
                     <Edit className="w-4 h-4 mr-2" />
                     Edit
@@ -331,14 +331,6 @@ export default function PlaylistDetailPage() {
                   </Button>
                 </>
               )}
-
-              <Button
-                variant="outline"
-                className="border-gray-600 hover:bg-gray-800 bg-transparent"
-              >
-                <Share className="w-4 h-4 mr-2" />
-                Share
-              </Button>
             </div>
           </div>
         </div>

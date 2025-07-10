@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   Music,
   Plus,
@@ -286,10 +285,10 @@ export default function HomePage() {
           </Link>
         </div>
 
-        {/* Your Playlists */}
+        {/*Playlists */}
         <section className="mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-2xl font-semibold">Your Playlists</h3>
+            <h3 className="text-2xl font-semibold">Playlists</h3>
             <Link href="/playlists">
               <Button
                 variant="ghost"

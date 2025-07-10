@@ -97,7 +97,7 @@ export default function PlaylistsPage() {
             </Link>
             <div className="flex items-center space-x-4 ml-8">
               <Music className="w-8 h-8 text-green-500" />
-              <h1 className="text-2xl font-bold">Your Playlists</h1>
+              <h1 className="text-2xl font-bold">Recent Playlists</h1>
             </div>
           </div>
 
