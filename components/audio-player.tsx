@@ -69,8 +69,24 @@ export function AudioPlayer({
       setPlayCountUpdated(false);
       setIsNewSong(true);
       checkIfLiked();
+      fetchCurrentLikesCount();
     }
   }, [song]);
+
+  const fetchCurrentLikesCount = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("songs")
+        .select("likes")
+        .eq("id", song.id)
+        .single();
+
+      if (error) throw error;
+      setLikesCount(data.likes || 0);
+    } catch (error) {
+      console.error("Error fetching likes count:", error);
+    }
+  };
 
   // Initialize current song index and shuffle order when playlist changes
   useEffect(() => {
@@ -112,18 +128,11 @@ export function AudioPlayer({
     };
 
     const updateDuration = () => setDuration(audio.duration);
-    // const handlePlay = () => {
-    //   setHasPlayStarted(true)
-    //   setIsPlaying(true)
-    // }
-    // const handlePause = () => setIsPlaying(false)
     const handlePlayEvent = () => setIsPlaying(true);
     const handlePauseEvent = () => setIsPlaying(false);
 
     audio.addEventListener("timeupdate", updateTime);
     audio.addEventListener("loadedmetadata", updateDuration);
-    // audio.addEventListener("play", handlePlay);
-    // audio.addEventListener("pause", handlePause);
     audio.addEventListener("play", handlePlayEvent);
     audio.addEventListener("pause", handlePauseEvent);
     audio.addEventListener("ended", handleSongEnd);
@@ -131,8 +140,6 @@ export function AudioPlayer({
     return () => {
       audio.removeEventListener("timeupdate", updateTime);
       audio.removeEventListener("loadedmetadata", updateDuration);
-      // audio.removeEventListener("play", handlePlay);
-      // audio.removeEventListener("pause", handlePause);
       audio.removeEventListener("play", handlePlayEvent);
       audio.removeEventListener("pause", handlePauseEvent);
       audio.removeEventListener("ended", handleSongEnd);
@@ -218,53 +225,36 @@ export function AudioPlayer({
 
       if (isLiked) {
         // Remove like
-        const { error: deleteError } = await supabase
-          .from("user_likes")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("song_id", song.id);
+        const { error } = await supabase.rpc("unlike_song", {
+          user_uuid: user.id,
+          song_uuid: song.id,
+        });
 
-        if (deleteError) throw deleteError;
-
-        // Update song likes count
-        const newLikesCount = Math.max(0, likesCount - 1);
-        const { error: updateError } = await supabase
-          .from("songs")
-          .update({ likes: newLikesCount })
-          .eq("id", song.id);
-
-        if (updateError) throw updateError;
+        if (error) throw error;
 
         setIsLiked(false);
-        setLikesCount(newLikesCount);
+        setLikesCount((prev) => Math.max(0, prev - 1));
       } else {
-        // Add like
-        const { error: insertError } = await supabase
-          .from("user_likes")
-          .insert([
-            {
-              user_id: user.id,
-              song_id: song.id,
-            },
-          ]);
+        // Add like - use RPC function for atomic operation
+        const { error } = await supabase.rpc("like_song", {
+          user_uuid: user.id,
+          song_uuid: song.id,
+        });
 
-        if (insertError) throw insertError;
-
-        // Update song likes count
-        const newLikesCount = likesCount + 1;
-        const { error: updateError } = await supabase
-          .from("songs")
-          .update({ likes: newLikesCount })
-          .eq("id", song.id);
-
-        if (updateError) throw updateError;
+        if (error) throw error;
 
         setIsLiked(true);
-        setLikesCount(newLikesCount);
+        setLikesCount((prev) => prev + 1);
       }
+
+      // Refresh the actual count from database to ensure accuracy
+      setTimeout(fetchCurrentLikesCount, 100);
     } catch (error) {
       console.error("Error toggling like:", error);
       alert("Failed to update like status");
+      // Revert optimistic update
+      await checkIfLiked();
+      await fetchCurrentLikesCount();
     }
   };
 

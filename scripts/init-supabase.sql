@@ -181,3 +181,47 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Create atomic like/unlike functions to prevent race conditions
+
+-- Function to like a song (atomic operation)
+CREATE OR REPLACE FUNCTION like_song(user_uuid UUID, song_uuid UUID)
+RETURNS VOID AS $$
+BEGIN
+  -- Insert the like (will fail if already exists due to unique constraint)
+  INSERT INTO public.user_likes (user_id, song_id)
+  VALUES (user_uuid, song_uuid)
+  ON CONFLICT (user_id, song_id) DO NOTHING;
+  
+  -- Update the song's like count atomically
+  UPDATE public.songs 
+  SET likes = (
+    SELECT COUNT(*)::INTEGER 
+    FROM public.user_likes 
+    WHERE song_id = song_uuid
+  )
+  WHERE id = song_uuid;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to unlike a song (atomic operation)
+CREATE OR REPLACE FUNCTION unlike_song(user_uuid UUID, song_uuid UUID)
+RETURNS VOID AS $$
+BEGIN
+  -- Remove the like
+  DELETE FROM public.user_likes 
+  WHERE user_id = user_uuid AND song_id = song_uuid;
+  
+  -- Update the song's like count atomically
+  UPDATE public.songs 
+  SET likes = (
+    SELECT COUNT(*)::INTEGER 
+    FROM public.user_likes 
+    WHERE song_id = song_uuid
+  )
+  WHERE id = song_uuid;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant execute permissions to authenticated users
+GRANT EXECUTE ON FUNCTION like_song(UUID, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION unlike_song(UUID, UUID) TO authenticated;

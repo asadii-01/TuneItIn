@@ -1,26 +1,26 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Play, Music, MoreHorizontal, Trash2, Heart } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Play, Music, MoreHorizontal, Trash2, Heart } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 interface SongListItemProps {
   song: {
-    id: string
-    title: string
-    artist: string
-    album?: string
-    cover_image?: string
-    duration?: number
-    plays?: number
-    likes?: number
-  }
-  index: number
-  onPlay: () => void
-  showRemove?: boolean
-  onRemove?: () => void
-  showLike?: boolean
+    id: string;
+    title: string;
+    artist: string;
+    album?: string;
+    cover_image?: string;
+    duration?: number;
+    plays?: number;
+    likes?: number;
+  };
+  index: number;
+  onPlay: () => void;
+  showRemove?: boolean;
+  onRemove?: () => void;
+  showLike?: boolean;
 }
 
 export function SongListItem({
@@ -31,101 +31,107 @@ export function SongListItem({
   onRemove,
   showLike = true,
 }: SongListItemProps) {
-  const [isLiked, setIsLiked] = useState(false)
-  const [likesCount, setLikesCount] = useState(song.likes || 0)
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(song.likes || 0);
 
   useEffect(() => {
     if (showLike) {
-      checkIfLiked()
+      checkIfLiked();
+      fetchCurrentLikesCount();
     }
-  }, [song.id, showLike])
+  }, [song.id, showLike]);
+
+  const fetchCurrentLikesCount = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("songs")
+        .select("likes")
+        .eq("id", song.id)
+        .single();
+
+      if (error) throw error;
+      setLikesCount(data.likes || 0);
+    } catch (error) {
+      console.error("Error fetching likes count:", error);
+    }
+  };
 
   const checkIfLiked = async () => {
     try {
       const {
         data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) return
+      } = await supabase.auth.getUser();
+      if (!user) return;
 
       const { data, error } = await supabase
         .from("user_likes")
         .select("id")
         .eq("user_id", user.id)
         .eq("song_id", song.id)
-        .single()
+        .single();
 
       if (error && error.code !== "PGRST116") {
-        console.error("Error checking like status:", error)
-        return
+        console.error("Error checking like status:", error);
+        return;
       }
 
-      setIsLiked(!!data)
+      setIsLiked(!!data);
     } catch (error) {
-      console.error("Error checking like status:", error)
+      console.error("Error checking like status:", error);
     }
-  }
+  };
 
   const toggleLike = async (e) => {
-    e.stopPropagation()
+    e.stopPropagation();
 
     try {
       const {
         data: { user },
-      } = await supabase.auth.getUser()
+      } = await supabase.auth.getUser();
       if (!user) {
-        alert("Please log in to like songs")
-        return
+        alert("Please log in to like songs");
+        return;
       }
 
       if (isLiked) {
         // Remove like
-        const { error: deleteError } = await supabase
-          .from("user_likes")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("song_id", song.id)
+        const { error } = await supabase.rpc("unlike_song", {
+          user_uuid: user.id,
+          song_uuid: song.id,
+        });
 
-        if (deleteError) throw deleteError
+        if (error) throw error;
 
-        // Update song likes count
-        const newLikesCount = Math.max(0, likesCount - 1)
-        const { error: updateError } = await supabase.from("songs").update({ likes: newLikesCount }).eq("id", song.id)
-
-        if (updateError) throw updateError
-
-        setIsLiked(false)
-        setLikesCount(newLikesCount)
+        setIsLiked(false);
+        setLikesCount((prev) => Math.max(0, prev - 1));
       } else {
         // Add like
-        const { error: insertError } = await supabase.from("user_likes").insert([
-          {
-            user_id: user.id,
-            song_id: song.id,
-          },
-        ])
+        const { error } = await supabase.rpc("like_song", {
+          user_uuid: user.id,
+          song_uuid: song.id,
+        });
 
-        if (insertError) throw insertError
+        if (error) throw error;
 
-        // Update song likes count
-        const newLikesCount = likesCount + 1
-        const { error: updateError } = await supabase.from("songs").update({ likes: newLikesCount }).eq("id", song.id)
-
-        if (updateError) throw updateError
-
-        setIsLiked(true)
-        setLikesCount(newLikesCount)
+        setIsLiked(true);
+        setLikesCount((prev) => prev + 1);
       }
-    } catch (error) {
-      console.error("Error toggling like:", error)
-      alert("Failed to update like status")
-    }
-  }
 
+      // Refresh the actual count from database to ensure accuracy
+      setTimeout(fetchCurrentLikesCount, 100);
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      alert("Failed to update like status");
+      // Revert optimistic update
+      await checkIfLiked();
+      await fetchCurrentLikesCount();
+    }
+  };
   const formatDuration = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = Math.floor(seconds % 60)
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
-  }
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  };
 
   return (
     <div className="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-800 transition-colors group">
@@ -170,17 +176,31 @@ export function SongListItem({
             size="sm"
             variant="ghost"
             onClick={toggleLike}
-            className={`${isLiked ? "text-red-500 hover:text-red-400" : "text-gray-400 hover:text-red-400"} opacity-0 group-hover:opacity-100 transition-all`}
+            className={`${
+              isLiked
+                ? "text-red-500 hover:text-red-400"
+                : "text-gray-400 hover:text-red-400"
+            } opacity-0 group-hover:opacity-100 transition-all`}
           >
             <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
           </Button>
-          {likesCount > 0 && <span className="text-xs text-gray-400 w-8 text-center">{likesCount}</span>}
+          {likesCount > 0 && (
+            <span className="text-xs text-gray-400 w-8 text-center">
+              {likesCount}
+            </span>
+          )}
         </div>
       )}
 
-      <div className="hidden sm:block text-sm text-gray-400">{song.plays || 0} plays</div>
+      <div className="hidden sm:block text-sm text-gray-400">
+        {song.plays || 0} plays
+      </div>
 
-      {song.duration && <div className="text-sm text-gray-400 w-12 text-right">{formatDuration(song.duration)}</div>}
+      {song.duration && (
+        <div className="text-sm text-gray-400 w-12 text-right">
+          {formatDuration(song.duration)}
+        </div>
+      )}
 
       {showRemove && onRemove ? (
         <Button
@@ -192,10 +212,14 @@ export function SongListItem({
           <Trash2 className="w-4 h-4" />
         </Button>
       ) : (
-        <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="opacity-0 group-hover:opacity-100"
+        >
           <MoreHorizontal className="w-4 h-4" />
         </Button>
       )}
     </div>
-  )
+  );
 }
