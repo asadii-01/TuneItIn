@@ -410,10 +410,181 @@ export function AudioPlayer({
   const canGoPrevious = hasPlaylist;
 
   return (
-    <Card className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 p-4 z-50">
+    <Card className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 p-2 sm:p-4 z-50">
       <audio ref={audioRef} src={song.audio_url} />
 
-      <div className="flex items-center justify-between">
+      {/* Mobile Layout */}
+      <div className="block sm:hidden">
+        {/* Song Info Row */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-3 flex-1 min-w-0">
+            <div className="w-10 h-10 bg-gray-800 rounded flex items-center justify-center flex-shrink-0">
+              {song.cover_image ? (
+                <img
+                  src={song.cover_image || "/placeholder.svg"}
+                  alt={song.title}
+                  className="w-full h-full object-cover rounded"
+                />
+              ) : (
+                <Play className="w-5 h-5 text-gray-400" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h4 className="text-white font-medium truncate text-sm">
+                {song.title}
+              </h4>
+              <p className="text-gray-400 text-xs truncate">{song.artist}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 flex-shrink-0">
+            {/* Like Button */}
+            <div className="flex items-center space-x-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleLike}
+                className={`${
+                  isLiked ? "text-red-500" : "text-gray-400"
+                } p-1 h-8 w-8`}
+              >
+                <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
+              </Button>
+              {likesCount > 0 && (
+                <span className="text-xs text-gray-400">{likesCount}</span>
+              )}
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="text-gray-400 p-1 h-8 w-8"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="flex items-center space-x-2 mb-3">
+          <span className="text-xs text-gray-400 w-8 text-center">
+            {formatTime(currentTime)}
+          </span>
+          <Slider
+            value={[currentTime]}
+            max={duration || 100}
+            step={1}
+            onValueChange={handleSeek}
+            className="flex-1"
+          />
+          <span className="text-xs text-gray-400 w-8 text-center">
+            {formatTime(duration)}
+          </span>
+        </div>
+
+        {/* Controls Row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleShuffle}
+              className={`${isShuffle ? "text-green-500" : "text-gray-400"} ${
+                !hasPlaylist ? "opacity-50" : ""
+              } p-1 h-8 w-8`}
+              disabled={!hasPlaylist}
+            >
+              <Shuffle className="w-3 h-3" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsRepeat(!isRepeat)}
+              className={`${
+                isRepeat ? "text-green-500" : "text-gray-400"
+              } p-1 h-8 w-8`}
+            >
+              <Repeat className="w-3 h-3" />
+            </Button>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handlePrevious}
+              className={`text-gray-400 hover:text-white ${
+                !canGoPrevious ? "opacity-50" : ""
+              } p-1 h-8 w-8`}
+              disabled={!canGoPrevious}
+            >
+              <SkipBack className="w-4 h-4" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={togglePlay}
+              className="bg-white text-black hover:bg-gray-200 w-10 h-10 rounded-full"
+            >
+              {isPlaying ? (
+                <Pause className="w-5 h-5" />
+              ) : (
+                <Play className="w-5 h-5" />
+              )}
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleNext}
+              className={`text-gray-400 hover:text-white ${
+                !canGoNext ? "opacity-50" : ""
+              } p-1 h-8 w-8`}
+              disabled={!canGoNext}
+            >
+              <SkipForward className="w-4 h-4" />
+            </Button>
+          </div>
+
+          <div className="flex items-center space-x-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleMute}
+              className="text-gray-400 p-1 h-8 w-8"
+            >
+              {isMuted ? (
+                <VolumeX className="w-3 h-3" />
+              ) : (
+                <Volume2 className="w-3 h-3" />
+              )}
+            </Button>
+            <Slider
+              value={[isMuted ? 0 : volume]}
+              max={1}
+              step={0.1}
+              onValueChange={handleVolumeChange}
+              className="w-12"
+            />
+          </div>
+        </div>
+
+        {/* Playlist Info */}
+        {playlist && (
+          <div className="mt-2 text-center">
+            <p className="text-gray-500 text-xs truncate">
+              {isShuffle ? "Shuffling" : "Playing from"} {playlist.name} •{" "}
+              {currentSongIndex + 1} of {playlist.songs.length}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Layout */}
+      <div className="hidden sm:flex items-center justify-between">
         {/* Song Info */}
         <div className="flex items-center space-x-4 flex-1">
           <div className="w-12 h-12 bg-gray-800 rounded flex items-center justify-center">
